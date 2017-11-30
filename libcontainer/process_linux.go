@@ -297,6 +297,7 @@ func (p *initProcess) start() error {
 		return newSystemErrorWithCause(err, "copying bootstrap data to pipe")
 	}
 
+	//cyz-> 此处存疑？？？
 	if err := p.execSetns(); err != nil {
 		return newSystemErrorWithCause(err, "running exec setns process for init")
 	}
@@ -312,6 +313,7 @@ func (p *initProcess) start() error {
 	if err := p.createNetworkInterfaces(); err != nil {
 		return newSystemErrorWithCause(err, "creating network interfaces")
 	}
+	//cyz-> 通过pipe发送config
 	if err := p.sendConfig(); err != nil {
 		return newSystemErrorWithCause(err, "sending config to init process")
 	}
@@ -320,6 +322,7 @@ func (p *initProcess) start() error {
 		sentResume bool
 	)
 
+	//cyz-> 只有当子process关闭了pipe，这个函数才会解除阻塞。
 	ierr := parseSync(p.parentPipe, func(sync *syncT) error {
 		switch sync.Type {
 		case procReady:

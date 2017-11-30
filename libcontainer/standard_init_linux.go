@@ -57,17 +57,22 @@ func (l *linuxStandardInit) Init() error {
 		}
 	}
 
+	//cyz-> 在容器内设置network。它通过netlink创建了一个lo；通过netlink获取本peer，然后进行ipv4/6地址更改、Gateway、mac、mtu等设置
 	if err := setupNetwork(l.config); err != nil {
 		return err
 	}
+	//cyz-> 在容器内设置Route。解析Route信息后，利用Netlink添加路由
 	if err := setupRoute(l.config.Config); err != nil {
 		return err
 	}
 
+	//cyz-> se-linux labels
 	label.Init()
 
 	// prepareRootfs() can be executed only for a new mount namespace.
 	if l.config.Config.Namespaces.Contains(configs.NEWNS) {
+		//cyz-> prepareRootfs sets up the devices, mount points, and filesystems for use
+		// inside a new mount namespace. 这利用了mount propagation type和pivot_root技术
 		if err := prepareRootfs(l.pipe, l.config); err != nil {
 			return err
 		}
@@ -77,6 +82,8 @@ func (l *linuxStandardInit) Init() error {
 	// but *after* we've given the user the chance to set up all of the mounts
 	// they wanted.
 	if l.config.CreateConsole {
+		//cyz-> 建立了一个pty，获取其主设备和从设备，将主设备通过ConsoleSocket发送给父process，
+		//并将从设备mount到rootfs，并绑定stdio
 		if err := setupConsole(l.consoleSocket, l.config, true); err != nil {
 			return err
 		}
@@ -115,10 +122,12 @@ func (l *linuxStandardInit) Init() error {
 		}
 	}
 	for _, path := range l.config.Config.MaskPaths {
+		//cyz-> 用/dev/null挂载文件，或者用新的tmpfs挂载目录，使得原来的被掩盖住
 		if err := maskPath(path); err != nil {
 			return err
 		}
 	}
+	//cyz-> 获取父进程死掉的信号
 	pdeath, err := system.GetParentDeathSignal()
 	if err != nil {
 		return err
@@ -142,6 +151,10 @@ func (l *linuxStandardInit) Init() error {
 			return err
 		}
 	}
+
+	// finalizeNamespace drops the caps, sets the correct user
+	// and working dir, and closes any leaked file descriptors
+	// before executing the command inside the namespace
 	if err := finalizeNamespace(l.config); err != nil {
 		return err
 	}

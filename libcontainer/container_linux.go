@@ -399,6 +399,7 @@ func (c *linuxContainer) newParentProcess(p *Process, doInit bool) (parentProces
 		return nil, newSystemErrorWithCause(err, "creating new command template")
 	}
 	if !doInit {
+		//cyz-> 利用setns设置Namespace的process
 		return c.newSetnsProcess(p, cmd, parentPipe, childPipe)
 	}
 
@@ -410,10 +411,13 @@ func (c *linuxContainer) newParentProcess(p *Process, doInit bool) (parentProces
 	if err := c.includeExecFifo(cmd); err != nil {
 		return nil, newSystemErrorWithCause(err, "including execfifo in cmd.Exec setup")
 	}
+	//cyz-> 利用clone设置Namespace的process
 	return c.newInitProcess(p, cmd, parentPipe, childPipe)
 }
 
 func (c *linuxContainer) commandTemplate(p *Process, childPipe *os.File) (*exec.Cmd, error) {
+	//cyz-> The returned Cmd's Args field is constructed from the command name followed
+	// by the elements of arg, so arg should not include the command name itself.
 	cmd := exec.Command(c.initPath, c.initArgs[1:]...)
 	cmd.Args[0] = c.initArgs[0]
 	cmd.Stdin = p.Stdin
@@ -423,6 +427,9 @@ func (c *linuxContainer) commandTemplate(p *Process, childPipe *os.File) (*exec.
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
+	// ExtraFiles specifies additional open files to be inherited by the
+    // new process. It does not include standard input, standard output, or
+    // standard error. If non-nil, entry i becomes file descriptor 3+i.
 	cmd.ExtraFiles = append(cmd.ExtraFiles, p.ExtraFiles...)
 	if p.ConsoleSocket != nil {
 		cmd.ExtraFiles = append(cmd.ExtraFiles, p.ConsoleSocket)
@@ -452,6 +459,7 @@ func (c *linuxContainer) newInitProcess(p *Process, cmd *exec.Cmd, parentPipe, c
 		}
 	}
 	_, sharePidns := nsMaps[configs.NEWPID]
+	//cyz-> bootstrapData将必须的数据（如Namespace、Cloneflag）以netlink.Request的格式编码成byte[]
 	data, err := c.bootstrapData(c.config.Namespaces.CloneFlags(), nsMaps)
 	if err != nil {
 		return nil, err

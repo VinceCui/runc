@@ -72,10 +72,12 @@ func inheritStdio(process *libcontainer.Process) error {
 }
 
 func (t *tty) recvtty(process *libcontainer.Process, socket *os.File) error {
+	//cyz-> 字如其名，在unix域套接字接收一个fd
 	f, err := utils.RecvFd(socket)
 	if err != nil {
 		return err
 	}
+	//cyz-> 根据f建立一个console
 	cons, err := console.ConsoleFromFile(f)
 	if err != nil {
 		return err

@@ -119,6 +119,7 @@ func New(root string, options ...func(*LinuxFactory) error) (Factory, error) {
 	}
 	l := &LinuxFactory{
 		Root:      root,
+		//cyz-> linux系统中有个符号链接：/proc/self/exe 它代表当前程序，所以可以用readlink读取它的源路径就可以获取当前程序的绝对路径
 		InitPath:  "/proc/self/exe",
 		InitArgs:  []string{os.Args[0], "init"},
 		Validator: validate.New(),
@@ -312,6 +313,7 @@ func (l *LinuxFactory) StartInitialization() (err error) {
 		}
 	}()
 
+	//cyz-> 从pipe处解析config。根据类型返回linuxSetnsInit或者linuxStandardInit
 	i, err := newContainerInit(it, pipe, consoleSocket, fifofd)
 	if err != nil {
 		return err

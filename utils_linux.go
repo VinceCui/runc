@@ -157,6 +157,7 @@ func setupIO(process *libcontainer.Process, rootuid, rootgid int, createTTY, det
 			t.postStart = append(t.postStart, parent, child)
 			t.consoleC = make(chan error, 1)
 			go func() {
+				//cyz-> 从parent接收一个fd，并创建console，开启go程。利用了epoll技术
 				if err := t.recvtty(process, parent); err != nil {
 					t.consoleC <- err
 				}
@@ -291,6 +292,7 @@ func (r *runner) run(config *specs.Process) (int, error) {
 	// with detaching containers, and then we get a tty after the container has
 	// started.
 	handler := newSignalHandler(r.enableSubreaper, r.notifySocket)
+	//cyz-> 这将会接收到子process传递的一个ptmx。
 	tty, err := setupIO(process, rootuid, rootgid, config.Terminal, detach, r.consoleSocket)
 	if err != nil {
 		r.destroy()

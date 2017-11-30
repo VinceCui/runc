@@ -118,6 +118,7 @@ func newMaster(f *os.File) (Console, error) {
 	m := &master{
 		f: f,
 	}
+	//cyz-> 根据f获取一个termios
 	t, err := m.getCurrent()
 	if err != nil {
 		return nil, err

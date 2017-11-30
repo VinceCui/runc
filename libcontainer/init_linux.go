@@ -174,6 +174,8 @@ func setupConsole(socket *os.File, config *initConfig, mount bool) error {
 	// the UID owner of the console to be the user the process will run as (so
 	// they can actually control their console).
 
+	//cyz-> 建立了一个pty，获取其主设备和从设备，将主设备通过ConsoleSocket发送给父process，
+	//并将从设备mount到rootfs，并绑定stdio
 	pty, slavePath, err := console.NewPty()
 	if err != nil {
 		return err
