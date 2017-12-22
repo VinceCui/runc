@@ -157,7 +157,7 @@ func setupIO(process *libcontainer.Process, rootuid, rootgid int, createTTY, det
 			t.postStart = append(t.postStart, parent, child)
 			t.consoleC = make(chan error, 1)
 			go func() {
-				//cyz-> 从parent接收一个fd，并创建console，开启go程。利用了epoll技术
+				//cyz-> UNIX域套接字特性，可以利用parent从child接收一个fd，并根据该fd创建console，开启go程。利用了epoll技术
 				if err := t.recvtty(process, parent); err != nil {
 					t.consoleC <- err
 				}
