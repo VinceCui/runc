@@ -84,6 +84,7 @@ func (h *signalHandler) forward(process *libcontainer.Process, tty *tty, detach 
 			// Ignore errors resizing, as above.
 			_ = tty.resize()
 		case unix.SIGCHLD:
+			//cyz-> 利用wait4获取所有已经退出的子进程。
 			exits, err := h.reap()
 			if err != nil {
 				logrus.Error(err)
@@ -122,6 +123,7 @@ func (h *signalHandler) reap() (exits []exit, err error) {
 		rus unix.Rusage
 	)
 	for {
+		//cyz-> 如果使用了WNOHANG参数,即使没有子进程退出,它也会立即返回,不会像wait那样永远等下去.
 		pid, err := unix.Wait4(-1, &ws, unix.WNOHANG, &rus)
 		if err != nil {
 			if err == unix.ECHILD {
